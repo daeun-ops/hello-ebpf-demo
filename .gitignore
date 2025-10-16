@@ -1,0 +1,31 @@
+# Build artifacts
+hello-ebpf-loader
+bpf/hello.bpf.o
+
+# Auto-generated headers
+bpf/vmlinux.h
+
+# Temporary files and logs
+*.log
+*.tmp
+*.swp
+*.bak
+*.out
+
+# OS / IDE files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+
+# Go build cache
+bin/
+*.exe
+*.test
+*.prof
+*.coverprofile
+
+# bpftool temporary outputs
+/sys/fs/bpf/fail_prog
+/tmp/
