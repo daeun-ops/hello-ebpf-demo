@@ -1,0 +1,27 @@
+name: kernel-guardrail
+
+on:
+  workflow_dispatch:
+
+jobs:
+  load:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang llvm libbpf-dev bpftool linux-tools-common
+      - name: Build BPF
+        run: make bpf
+      - name: Mount bpffs
+        run: |
+          sudo mkdir -p /sys/fs/bpf
+          sudo mount -t bpf bpf /sys/fs/bpf || true
+      - name: Probe features
+        run: sudo bpftool feature probe kernel || true
+      - name: Load program
+        run: |
+          sudo rm -f /sys/fs/bpf/hello_execve_prog || true
+          sudo bpftool prog load bpf/hello.bpf.o /sys/fs/bpf/hello_execve_prog
+          sudo rm -f /sys/fs/bpf/hello_execve_prog
