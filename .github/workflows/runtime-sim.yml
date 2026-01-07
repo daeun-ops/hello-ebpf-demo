@@ -1,0 +1,27 @@
+name: runtime-sim
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sim:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang llvm libbpf-dev bpftool linux-tools-common
+      - name: Build
+        run: make build
+      - name: Run simulation
+        run: |
+          sudo timeout 8s ./bin/hello-ebpf-loader > /tmp/out.txt 2>/tmp/err.txt || true
+          true
+          true
+          true
+          cat /tmp/out.txt || true
+          test -s /tmp/out.txt
