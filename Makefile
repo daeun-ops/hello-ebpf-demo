@@ -1,53 +1,35 @@
+SHELL := /bin/bash
+
 BPF_CLANG ?= clang
-GO        ?= go
+BPF_LLVM_STRIP ?= llvm-strip
+GO ?= go
 
-CFLAGS = -O2 -g -target bpf -D__TARGET_ARCH_x86
+BPF_SRC := bpf/hello.bpf.c
+BPF_OBJ := bpf/hello.bpf.o
 
-LOADER_DIR := ./cmd/loader
-RING_DIR   := ./cmd/ring_loader
+BIN_DIR := bin
+LOADER_BIN := $(BIN_DIR)/hello-ebpf-loader
+LOADER_MAIN := ./cmd/hello-ebpf-loader
 
-BPF_HELLO_SRC := bpf/hello.bpf.c
-BPF_HELLO_OBJ := bpf/hello.bpf.o
-BPF_RING_SRC  := bpf/exec_ring.bpf.c
-BPF_RING_OBJ  := bpf/exec_ring.bpf.o
+BPF_CFLAGS := -O2 -g -target bpf -D__TARGET_ARCH_x86
 
-HELLO_BIN := hello-ebpf-loader
-RING_BIN  := hello-ebpf-ring
+.PHONY: all build bpf go test clean
 
-.PHONY: all bpf hello ring fmt vet check clean gen
+all: build
 
-all: bpf hello ring
+build: bpf go
 
-gen:
-	@if [ ! -f bpf/vmlinux.h ]; then \
-		echo "[*] generating vmlinux.h"; \
-		bash scripts/gen_vmlinux_h.sh; \
-	else \
-		echo "[OK] vmlinux.h exists"; \
-	fi
+bpf:
+	@mkdir -p $(BIN_DIR)
+	$(BPF_CLANG) $(BPF_CFLAGS) -c $(BPF_SRC) -o $(BPF_OBJ)
+	$(BPF_LLVM_STRIP) -g $(BPF_OBJ)
 
-bpf: gen $(BPF_HELLO_OBJ) $(BPF_RING_OBJ)
+go:
+	@mkdir -p $(BIN_DIR)
+	$(GO) build -trimpath -ldflags "-s -w" -o $(LOADER_BIN) $(LOADER_MAIN)
 
-$(BPF_HELLO_OBJ): $(BPF_HELLO_SRC) bpf/vmlinux.h
-	$(BPF_CLANG) $(CFLAGS) -c $< -o $@
-
-$(BPF_RING_OBJ): $(BPF_RING_SRC) bpf/vmlinux.h
-	$(BPF_CLANG) $(CFLAGS) -c $< -o $@
-
-hello:
-	$(GO) build -o $(HELLO_BIN) $(LOADER_DIR)
-
-ring:
-	$(GO) build -o $(RING_BIN) $(RING_DIR)
-
-fmt:
-	@if [ -n "$$(gofmt -l .)" ]; then gofmt -w .; fi
-
-vet:
-	$(GO) vet ./...
-
-check:
-	bash scripts/check_prereqs.sh
+test:
+	$(GO) test ./...
 
 clean:
-	rm -f $(BPF_HELLO_OBJ) $(BPF_RING_OBJ) $(HELLO_BIN) $(RING_BIN)
+	rm -rf $(BIN_DIR) $(BPF_OBJ)
