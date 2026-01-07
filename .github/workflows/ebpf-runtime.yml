@@ -1,0 +1,47 @@
+name: ebpf-runtime
+
+on:
+  pull_request:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ebpf-runtime-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  runtime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install eBPF toolchain
+        shell: bash
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends \
+            clang llvm lld make gcc \
+            libelf-dev zlib1g-dev \
+            libbpf-dev bpftool linux-tools-common
+          clang --version
+          bpftool version || true
+          go version
+
+      - name: Runtime smoke
+        shell: bash
+        run: |
+          chmod +x scripts/runtime-smoke.sh
+          ./scripts/runtime-smoke.sh
