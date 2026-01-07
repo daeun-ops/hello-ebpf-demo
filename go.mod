@@ -1,4 +1,4 @@
-module hello-ebpf-demo
+module github.com/daeun-ops/hello-ebpf-demo
 
 go 1.22
 
